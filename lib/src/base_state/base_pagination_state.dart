@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'base_query.dart';
 
 enum BasePaginationStatus { initial, loading, paging, success, error }
@@ -14,10 +16,10 @@ extension BasePaginationStatusService on BasePaginationStatus {
   bool get isError => this == BasePaginationStatus.error;
 }
 
-class BasePaginationState<T, Q> {
+class BasePaginationState<T> {
   List<T> list;
   BasePaginationStatus status;
-  BaseQuery<Q> query;
+  BaseQuery query;
   bool reachedMax;
   String? errorMessage;
 
@@ -26,12 +28,12 @@ class BasePaginationState<T, Q> {
     this.status = BasePaginationStatus.initial,
     required this.query,
     this.reachedMax = false,
-    this.errorMessage = 'Some Error',
+    this.errorMessage,
   });
 
-  BasePaginationState<T, Q> copyWith({
+  BasePaginationState<T> copyWith({
     List<T>? list,
-    BaseQuery<Q>? query,
+    BaseQuery? query,
     BasePaginationStatus? status,
     bool? reachedMax,
     String? errorMessage,
@@ -43,5 +45,23 @@ class BasePaginationState<T, Q> {
     errorMessage: errorMessage ?? this.errorMessage,
   );
 
-  factory BasePaginationState.initial() => BasePaginationState<T, Q>(list: [], query: BaseQuery.initial());
+  @override
+  String toString() {
+    return 'BasePaginationState{list: $list, status: $status, query: $query, reachedMax: $reachedMax, errorMessage: $errorMessage}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BasePaginationState &&
+        listEquals(list, other.list) &&
+        status == other.status &&
+        query == other.query &&
+        reachedMax == other.reachedMax &&
+        errorMessage == other.errorMessage;
+  }
+
+  @override
+  int get hashCode {
+    return list.hashCode ^ status.hashCode ^ query.hashCode ^ reachedMax.hashCode ^ errorMessage.hashCode;
+  }
 }

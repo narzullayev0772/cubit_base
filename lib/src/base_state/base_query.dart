@@ -1,16 +1,24 @@
-abstract class AbstractBaseQuery<Q> {}
+abstract class AbstractBaseQuery {}
 
-class BaseQuery<Q> extends AbstractBaseQuery<Q> {
+class BaseQuery extends AbstractBaseQuery{
   final int page;
   final int size;
-  final Q query;
 
-  BaseQuery({required this.query, required this.page, required this.size});
+  BaseQuery({required this.page, required this.size});
 
-  static initial() {
-    return BaseQuery(query: null, page: 1, size: 10);
+  BaseQuery copyWith({int? page, int? size}) =>
+      BaseQuery(page: page ?? this.page, size: size ?? this.size);
+
+  @override
+  String toString() {
+    return 'BaseQuery{page: $page, size: $size}';
   }
 
-  BaseQuery<Q> copyWith({int? page, int? size, Q? query}) =>
-      BaseQuery(query: query ?? this.query, page: page ?? this.page, size: size ?? this.size);
+  @override
+  bool operator ==(Object other) {
+    return other is BaseQuery && page == other.page && size == other.size;
+  }
+
+  @override
+  int get hashCode => page.hashCode ^ size.hashCode ;
 }

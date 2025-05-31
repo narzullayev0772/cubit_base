@@ -61,23 +61,23 @@ class Fetcher {
     }
   }
 
-  static Future<void> fetchWithPaginate<T, Q>({
+  static Future<void> fetchWithPaginate<T>({
     required Future<DataState<List<T>?>> fetcher,
-    required BasePaginationState<T, Q> state,
-    required void Function(BasePaginationState<T, Q> state) emitter,
+    required BasePaginationState<T> state,
+    required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
   }) async {
     if (state.query.page == 1) {
-      await _fetchFirstPage<T, Q>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+      await _fetchFirstPage<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
     } else {
-      await _paginate<T, Q>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+      await _paginate<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
     }
   }
 
-  static Future<void> _fetchFirstPage<T, Q>({
+  static Future<void> _fetchFirstPage<T>({
     required Future<DataState<List<T>?>> fetcher,
-    required BasePaginationState<T, Q> state,
-    required void Function(BasePaginationState<T, Q> state) emitter,
+    required BasePaginationState<T> state,
+    required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
   }) async {
     void onStatusChanged(BasePaginationStatus status) {
@@ -87,7 +87,7 @@ class Fetcher {
     }
 
     onStatusChanged(BasePaginationStatus.loading);
-    BasePaginationState<T, Q> newState = state.copyWith(
+    BasePaginationState<T> newState = state.copyWith(
       status: BasePaginationStatus.loading,
       query: state.query.copyWith(page: 1),
     );
@@ -120,10 +120,10 @@ class Fetcher {
     }
   }
 
-  static Future<void> _paginate<T, Q>({
+  static Future<void> _paginate<T>({
     required Future<DataState<List<T>?>> fetcher,
-    required BasePaginationState<T, Q> state,
-    required void Function(BasePaginationState<T, Q> state) emitter,
+    required BasePaginationState<T> state,
+    required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
   }) async {
     if (state.status.isPaging || !state.reachedMax) return;
@@ -135,7 +135,7 @@ class Fetcher {
 
     onStatusChanged(BasePaginationStatus.paging);
 
-    BasePaginationState<T, Q> newState = state.copyWith(status: BasePaginationStatus.paging);
+    BasePaginationState<T> newState = state.copyWith(status: BasePaginationStatus.paging);
 
     try {
       emitter(newState);

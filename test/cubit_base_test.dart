@@ -1,4 +1,6 @@
 import 'package:cubit_base/cubit_base.dart';
+import 'package:cubit_base/src/base_state/base_pagination_state.dart';
+import 'package:cubit_base/src/base_state/base_query.dart';
 import 'package:cubit_base/src/base_state/base_state.dart';
 import 'package:cubit_base/src/base_state/data_state.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +52,37 @@ void main() {
       expect(emittedStates[1].status, BaseStatus.error);
       expect(emittedStates[1].errorMessage, contains('Exception'));
       expect(emittedStates.last.status, BaseStatus.initial);
+    });
+  });
+
+  group('fetchWithPaginate', () {
+    test('emits loading → success → initial', () async {
+      final emittedStates = <BasePaginationState<String>>[];
+      final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
+      final state = BasePaginationState<String>(list: [], query: BaseQuery(page: 1, size: 10));
+      await Fetcher.fetchWithPaginate<String>(
+        fetcher: fetcher,
+        state: state,
+        emitter: (state) => emittedStates.add(state),
+      );
+
+      expect(emittedStates, [
+        BasePaginationState<String>(
+          status: BasePaginationStatus.loading,
+          list: [],
+          query: BaseQuery(page: 1, size: 10),
+        ),
+        BasePaginationState<String>(
+          status: BasePaginationStatus.success,
+          list: ["Hello", "world"],
+          query: BaseQuery(page: 2, size: 10),
+        ),
+        BasePaginationState<String>(
+          status: BasePaginationStatus.initial,
+          list: ["Hello", "world"],
+          query: BaseQuery(page: 2, size: 10),
+        ),
+      ]);
     });
   });
 }
