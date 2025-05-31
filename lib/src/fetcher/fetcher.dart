@@ -1,3 +1,4 @@
+import 'package:cubit_base/src/base_state/base_pagination_state.dart';
 import 'package:cubit_base/src/base_state/base_state.dart';
 import 'package:cubit_base/src/base_state/data_state.dart';
 
@@ -32,6 +33,7 @@ class Fetcher {
         onStatusChange(status);
       }
     }
+
     onStatusChanged(BaseStatus.loading);
     BaseState<T> newState = state.copyWith(status: BaseStatus.loading);
     try {
@@ -55,6 +57,98 @@ class Fetcher {
     } finally {
       onStatusChanged(BaseStatus.initial);
       newState = newState.copyWith(status: BaseStatus.initial);
+      emitter(newState);
+    }
+  }
+
+  static Future<void> _fetchFirstPage<T, Q>({
+    required Future<DataState<List<T>?>> fetcher,
+    required BasePaginationState<T, Q> state,
+    required void Function(BasePaginationState<T, Q> state) emitter,
+    void Function(BasePaginationStatus status)? onStatusChange,
+  }) async {
+    void onStatusChanged(BasePaginationStatus status) {
+      if (onStatusChange != null) {
+        onStatusChange(status);
+      }
+    }
+
+    onStatusChanged(BasePaginationStatus.loading);
+    BasePaginationState<T, Q> newState = state.copyWith(
+      status: BasePaginationStatus.loading,
+      query: state.query.copyWith(page: 1),
+    );
+    try {
+      emitter(newState);
+      final result = await fetcher;
+
+      if (result is DataSuccess) {
+        onStatusChanged(BasePaginationStatus.success);
+        newState = newState.copyWith(
+          list: result.data,
+          status: BasePaginationStatus.success,
+          reachedMax: (result.data?.length ?? 0) == state.query.size,
+          query: state.query.copyWith(page: 2),
+        );
+        emitter(newState);
+      } else if (result is DataFailed) {
+        onStatusChanged(BasePaginationStatus.error);
+        newState = newState.copyWith(errorMessage: result.errorMessage, status: BasePaginationStatus.error);
+        emitter(newState);
+      }
+    } catch (e) {
+      onStatusChanged(BasePaginationStatus.error);
+      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
+      emitter(newState);
+    } finally {
+      onStatusChanged(BasePaginationStatus.initial);
+      newState = newState.copyWith(status: BasePaginationStatus.initial);
+      emitter(newState);
+    }
+  }
+
+  static Future<void> _paginate<T, Q>({
+    required Future<DataState<List<T>?>> fetcher,
+    required BasePaginationState<T, Q> state,
+    required void Function(BasePaginationState<T, Q> state) emitter,
+    void Function(BasePaginationStatus status)? onStatusChange,
+  }) async {
+    if (state.status.isPaging || !state.reachedMax) return;
+    void onStatusChanged(BasePaginationStatus status) {
+      if (onStatusChange != null) {
+        onStatusChange(status);
+      }
+    }
+
+    onStatusChanged(BasePaginationStatus.paging);
+
+    BasePaginationState<T, Q> newState = state.copyWith(status: BasePaginationStatus.paging);
+
+    try {
+      emitter(newState);
+      final result = await fetcher;
+
+      if (result is DataSuccess) {
+        onStatusChanged(BasePaginationStatus.success);
+        newState = newState.copyWith(
+          list: [...state.list, ...result.data ?? []],
+          status: BasePaginationStatus.success,
+          reachedMax: (result.data?.length ?? 0) == state.query.size,
+          query: state.query.copyWith(page: state.query.page + 1),
+        );
+        emitter(newState);
+      } else if (result is DataFailed) {
+        onStatusChanged(BasePaginationStatus.error);
+        newState = newState.copyWith(errorMessage: result.errorMessage, status: BasePaginationStatus.error);
+        emitter(newState);
+      }
+    } catch (e) {
+      onStatusChanged(BasePaginationStatus.error);
+      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
+      emitter(newState);
+    } finally {
+      onStatusChanged(BasePaginationStatus.initial);
+      newState = newState.copyWith(status: BasePaginationStatus.initial);
       emitter(newState);
     }
   }
