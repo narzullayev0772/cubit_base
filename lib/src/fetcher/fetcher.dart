@@ -3,13 +3,15 @@ import 'package:cubit_base/src/base_state/base_state.dart';
 import 'package:cubit_base/src/base_state/data_state.dart';
 
 class Fetcher {
-  /// [fetch] is fetching function with base state
+  /// [fetchWithBase] is fetching function with base state
   ///
   /// Params:
   /// [fetcher] function that used with useCases
   /// [state] is target state, in fact input state
   /// [emitter] is emit, that will use for set,
   /// actually output state
+  /// [onStatusChange] when status changed,
+  /// [<T>] is DataModel, it can be UserModel, NotificationModel, and etch
   ///
   /// Example:
   ///
@@ -61,6 +63,26 @@ class Fetcher {
     }
   }
 
+  /// [fetchWithPaginate] is fetching function with base state
+  ///
+  /// Params:
+  /// [fetcher] function that used with useCases
+  /// [state] is target state, in fact input state
+  /// [emitter] is emit, that will use for set,
+  /// actually output state
+  /// [onStatusChange] when status changed,
+  /// [<T>] is List item's DataModel, it can be UserModel, NotificationModel, and etch
+  /// Example:
+  ///
+  /// ```dart
+  /// Fetcher.fetchWithBase<T>(
+  ///  fetcher: useCases.call(...),
+  ///  state: state.<targetState>,
+  ///  emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
+  ///  onStatusChange: (status) => print(status),
+  ///  );
+  ///  ```
+  ///
   static Future<void> fetchWithPaginate<T>({
     required Future<DataState<List<T>?>> fetcher,
     required BasePaginationState<T> state,
