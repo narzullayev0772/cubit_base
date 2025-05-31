@@ -4,29 +4,52 @@ import 'package:cubit_base/src/base_state/data_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Future<DataState<List<int>>> fetcher(bool error) async {
-    await Future.delayed(Duration(seconds: 2));
-    if (error) return DataFailed(errorMessage: 'error');
-    return DataSuccess(data: [1, 2, 3, 4]);
-  }
+  group('fetchWithBase', () {
+    test('emits loading → success → initial', () async {
+      final emittedStates = <BaseState<String>>[];
 
-  test('adds one to input values', () {
-    BaseState<List<int>> state = BaseState<List<int>>(data: []);
-    void emitter(BaseState<List<int>> state) {
+      await Fetcher.fetchWithBase<String>(
+        fetcher: Future.value(DataSuccess(data: "Hello world")),
+        state: BaseState<String>(),
+        emitter: (state) => emittedStates.add(state),
+      );
 
-    }
-    Fetcher.fetchWithBase(
-      fetcher: fetcher(false),
-      state: state,
-      emitter: emitter,
-      onStatusChange: (status) {
-        if (status == BaseStatus.loading) {
-          expect(status, BaseStatus.loading);
-        } else if (status == BaseStatus.success) {
-          expect(status, BaseStatus.success);
-          expect(state.data, [1, 2, 3,4]);
-        }
-      },
-    );
+      expect(emittedStates, [
+        BaseState<String>(status: BaseStatus.loading),
+        BaseState<String>(status: BaseStatus.success, data: "Hello world"),
+        BaseState<String>(status: BaseStatus.initial, data: "Hello world"),
+      ]);
+    });
+
+    test('emits loading → error → initial', () async {
+      final emittedStates = <BaseState<String>>[];
+
+      await Fetcher.fetchWithBase<String>(
+        fetcher: Future.value(DataFailed(errorMessage: "Something went wrong")),
+        state: BaseState<String>(),
+        emitter: (state) => emittedStates.add(state),
+      );
+
+      expect(emittedStates, [
+        BaseState<String>(status: BaseStatus.loading),
+        BaseState<String>(status: BaseStatus.error, errorMessage: "Something went wrong"),
+        BaseState<String>(status: BaseStatus.initial, errorMessage: "Something went wrong"),
+      ]);
+    });
+
+    test('emits loading → error → initial on exception', () async {
+      final emittedStates = <BaseState<String>>[];
+
+      await Fetcher.fetchWithBase<String>(
+        fetcher: Future<DataState<String>>.error(Exception('Failed')).catchError((e) => throw e),
+        state: BaseState<String>(),
+        emitter: (state) => emittedStates.add(state),
+      );
+
+      expect(emittedStates[0].status, BaseStatus.loading);
+      expect(emittedStates[1].status, BaseStatus.error);
+      expect(emittedStates[1].errorMessage, contains('Exception'));
+      expect(emittedStates.last.status, BaseStatus.initial);
+    });
   });
 }
