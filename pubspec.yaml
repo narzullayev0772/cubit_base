@@ -1,5 +1,5 @@
 name: cubit_base
-description: "A new Flutter package project."
+description: "cubit_base is a library for using easy fetch and paginate data from api with cubit"
 version: 0.0.1
 homepage:
 
