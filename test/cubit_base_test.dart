@@ -56,20 +56,23 @@ void main() {
   });
 
   group('fetchWithPaginate', () {
-    test('emits loading → success → initial', () async {
+    test('fetch', () async {
       final emittedStates = <BasePaginationState<String>>[];
       final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
-      final state = BasePaginationState<String>(list: [], query: BaseQuery(page: 1, size: 10));
+
+      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 1, size: 10));
       await Fetcher.fetchWithPaginate<String>(
         fetcher: fetcher,
         state: state,
-        emitter: (state) => emittedStates.add(state),
+        emitter: (newState) {
+          state = newState;
+          emittedStates.add(newState);
+        },
       );
-
       expect(emittedStates, [
         BasePaginationState<String>(
           status: BasePaginationStatus.loading,
-          list: [],
+          list: ["Hello"],
           query: BaseQuery(page: 1, size: 10),
         ),
         BasePaginationState<String>(
@@ -81,6 +84,38 @@ void main() {
           status: BasePaginationStatus.initial,
           list: ["Hello", "world"],
           query: BaseQuery(page: 2, size: 10),
+        ),
+      ]);
+    });
+    test('paginate', () async {
+      final emittedStates = <BasePaginationState<String>>[];
+      final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
+
+      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 2, size: 10), reachedMax: true);
+      await Fetcher.fetchWithPaginate<String>(
+        fetcher: fetcher,
+        state: state,
+        emitter: (newState) {
+          state = newState;
+          emittedStates.add(newState);
+        },
+      );
+      expect(emittedStates, [
+        BasePaginationState<String>(
+          status: BasePaginationStatus.paging,
+          list: ["Hello"],
+          query: BaseQuery(page: 2, size: 10),
+          reachedMax: true,
+        ),
+        BasePaginationState<String>(
+          status: BasePaginationStatus.success,
+          list: ["Hello", "Hello", "world"],
+          query: BaseQuery(page: 3, size: 10),
+        ),
+        BasePaginationState<String>(
+          status: BasePaginationStatus.initial,
+          list: ["Hello", "Hello", "world"],
+          query: BaseQuery(page: 3, size: 10),
         ),
       ]);
     });
