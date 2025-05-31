@@ -61,6 +61,19 @@ class Fetcher {
     }
   }
 
+  static Future<void> fetchWithPaginate<T, Q>({
+    required Future<DataState<List<T>?>> fetcher,
+    required BasePaginationState<T, Q> state,
+    required void Function(BasePaginationState<T, Q> state) emitter,
+    void Function(BasePaginationStatus status)? onStatusChange,
+  }) async {
+    if (state.query.page == 1) {
+      await _fetchFirstPage<T, Q>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+    } else {
+      await _paginate<T, Q>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+    }
+  }
+
   static Future<void> _fetchFirstPage<T, Q>({
     required Future<DataState<List<T>?>> fetcher,
     required BasePaginationState<T, Q> state,
