@@ -51,7 +51,9 @@ Below is an example demonstrating how to use `cubit_base` for both single data f
 
 ### 1. Setting Up a Cubit
 
-First, define your data model and Cubit. For this example, let's assume a `UserModel` and a `UserCubit`.
+First, define your data model and Cubit. For this example, let's assume a `UserCubit` and a `UserState`.
+
+#### `UserCubit`
 
 ```dart
 // user_cubit.dart
@@ -91,7 +93,12 @@ class UserCubit extends Cubit<UserState> {
     );
   }
 }
+```
 
+#### `UserState`
+
+```dart
+// user_state.dart
 class UserState{
   final BaseState<UserModel> getUserState;
   final BaseState<List<UserModel>> getUsersListState;
@@ -113,6 +120,7 @@ class UserState{
   }
 }
 ```
+
 
 ### 2. Using `fetchWithBase`
 
