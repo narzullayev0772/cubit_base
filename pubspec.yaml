@@ -1,7 +1,7 @@
 name: cubit_base
 description: "cubit_base is a library for using easy fetch and paginate data from api with cubit"
-version: 0.0.1
-homepage:
+version: 0.0.2
+homepage: "https://github.com/narzullayev0772/cubit_base"
 
 environment:
   sdk: ^3.7.0

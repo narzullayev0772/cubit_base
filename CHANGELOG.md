@@ -1,3 +1,2 @@
-## 0.0.1
-
-* TODO: Describe initial release.
+## [1.0.1]
+- Updated README.md with comprehensive usage instructions and examples.
