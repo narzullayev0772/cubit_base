@@ -54,102 +54,62 @@ Below is an example demonstrating how to use `cubit_base` for both single data f
 First, define your data model and Cubit. For this example, let's assume a `UserModel` and a `UserCubit`.
 
 ```dart
-// user_model.dart
-class UserModel {
-  final String id;
-  final String name;
-
-  UserModel({required this.id, required this.name});
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(id: json['id'], name: json['name']);
-  }
-}
-
 // user_cubit.dart
 import 'package:bloc/bloc.dart';
 import 'package:cubit_base/cubit_base.dart';
 
 class UserCubit extends Cubit<UserState> {
+  // or you can use with usecase
   final UserRepository repository;
 
   UserCubit(this.repository) : super(UserState.initial());
 
-  Future<void> fetchUser(String userId) async {
+  Future<void> fetchUser(num userId) async {
     await Fetcher.fetchWithBase(
-      fetcher: repository.getUser(userId),
-      state: state,
-      emitter: (newState) => emit(newState),
+      fetcher: repository.getUser(userId), // getUserUseCase.call(params:userId);
+      state: state.getUserState,
+      emitter: (newState)=> emit(state.copyWith(getUserState: newState.data)),
       onStatusChange: (status) => print('Status: $status'),
     );
   }
 
-  Future<void> fetchUsers({bool isFirstPage = false}) async {
-    final query = isFirstPage ? state.query.copyWith(page: 1) : state.query;
+  Future<void> fetchUsersList() async {
+    await Fetcher.fetchWithBase(
+      fetcher: repository.getUsersList(), // getUsersListUseCase.call(params:null);
+      state: state.getUsersListState,
+      emitter: (newState)=> emit(state.copyWith(getUsersListState: newState.data)),
+      onStatusChange: (status) => print('Status: $status'),
+    );
+  }
+
+  Future<void> fetchUsersListWithPaginate() async {
     await Fetcher.fetchWithPaginate(
-      fetcher: repository.getUsers(query),
-      state: state.copyWith(query: query),
-      emitter: (newState) => emit(newState),
-      onStatusChange: (status) => print('Pagination Status: $status'),
+      fetcher: repository.getUsersListWithPaginate(params:state.usersListState.query), // getUsersListUseCase.call(params:null);
+      state: state.usersListState,
+      emitter: (newState)=> emit(state.copyWith(usersListState: newState.data)),
+      onStatusChange: (status) => print('Status: $status'),
     );
   }
 }
 
-class UserState extends BasePaginationState<UserModel> {
-  UserState({
-    required super.status,
-    super.data,
-    super.list = const [],
-    super.errorMessage,
-    super.reachedMax = false,
-    super.query = const Query(page: 1, size: 10),
-  });
+class UserState{
+  final BaseState<UserModel> getUserState;
+  final BaseState<List<UserModel>> getUsersListState;
+  final BasePaginationState<UserModel> usersListState;
 
-  factory UserState.initial() => UserState(status: BasePaginationStatus.initial);
+  factory UserState.initial() => UserState(getUserState: BaseState.initial(), getUsersListState: BaseState.initial(), usersListState: BasePaginationState(query: BaseQuery(page: 1, size: 10)));
 
   @override
   UserState copyWith({
-    BasePaginationStatus? status,
-    UserModel? data,
-    List<UserModel>? list,
-    String? errorMessage,
-    bool? reachedMax,
-    Query? query,
+    BaseState<UserModel>? getUserState,
+    BaseState<List<UserModel>>? getUsersListState,
+    BasePaginationState<UserModel>? usersListState,
   }) {
     return UserState(
-      status: status ?? this.status,
-      data: data ?? this.data,
-      list: list ?? this.list,
-      errorMessage: errorMessage ?? this.errorMessage,
-      reachedMax: reachedMax ?? this.reachedMax,
-      query: query ?? this.query,
+      getUserState: getUserState ?? this.getUserState,
+      getUsersListState: getUsersListState ?? this.getUsersListState,
+      usersListState: usersListState ?? this.usersListState,
     );
-  }
-}
-
-// user_repository.dart
-class UserRepository {
-  Future<DataState<UserModel?>> getUser(String userId) async {
-    try {
-      // Simulate API call
-      final response = await Future.delayed(Duration(seconds: 1), () => {'id': userId, 'name': 'John Doe'});
-      return DataSuccess(UserModel.fromJson(response));
-    } catch (e) {
-      return DataFailed(e.toString());
-    }
-  }
-
-  Future<DataState<List<UserModel>?>> getUsers(Query query) async {
-    try {
-      // Simulate paginated API call
-      final response = await Future.delayed(Duration(seconds: 1), () => [
-            {'id': '${query.page}_1', 'name': 'User ${query.page}_1'},
-            {'id': '${query.page}_2', 'name': 'User ${query.page}_2'},
-          ]);
-      return DataSuccess(response.map((json) => UserModel.fromJson(json)).toList());
-    } catch (e) {
-      return DataFailed(e.toString());
-    }
   }
 }
 ```
@@ -159,10 +119,11 @@ class UserRepository {
 Use `fetchWithBase` to fetch a single item, such as a user profile.
 
 ```dart
-final userCubit = UserCubit(UserRepository());
-
 // Fetch a single user
-userCubit.fetchUser('123');
+userCubit.fetchUser(123);
+
+// Fetch a list of users
+userCubit.fetchUsersList();
 ```
 
 This will:
@@ -177,13 +138,9 @@ This will:
 Use `fetchWithPaginate` to fetch paginated data, such as a list of users.
 
 ```dart
-final userCubit = UserCubit(UserRepository());
 
-// Fetch the first page
-userCubit.fetchUsers(isFirstPage: true);
-
-// Fetch the next page
-userCubit.fetchUsers();
+// Fetch a list of users with pagination
+userCubit.fetchUsersListWithPaginate();
 ```
 
 This will:
@@ -213,7 +170,7 @@ class UserScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => UserCubit(UserRepository())..fetchUsers(isFirstPage: true),
+      create: (context) => ...,
       child: BlocBuilder<UserCubit, UserState>(
         builder: (context, state) {
           if (state.status.isLoading) {
@@ -255,11 +212,11 @@ Fetches a single item from an API and updates the state.
 
 **Example**:
 ```dart
-Fetcher.fetchWithBase<UserModel>(
-  fetcher: repository.getUser('123'),
-  state: state,
-  emitter: (newState) => emit(newState),
-  onStatusChange: (status) => print('Status: $status'),
+Fetcher.fetchWithBase<T>(
+fetcher: useCases.call(...),
+state: state.<targetState>,
+emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
+onStatusChange: (status) => print(status),
 );
 ```
 
@@ -275,11 +232,11 @@ Fetches a paginated list from an API and updates the state.
 
 **Example**:
 ```dart
-Fetcher.fetchWithPaginate<UserModel>(
-  fetcher: repository.getUsers(state.query),
-  state: state,
-  emitter: (newState) => emit(newState),
-  onStatusChange: (status) => print('Pagination Status: $status'),
+Fetcher.fetchWithBase<T>(
+fetcher: useCases.call(...),
+state: state.<targetState>,
+emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
+onStatusChange: (status) => print(status),
 );
 ```
 

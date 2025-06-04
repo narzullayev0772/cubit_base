@@ -75,7 +75,7 @@ class Fetcher {
   /// Example:
   ///
   /// ```dart
-  /// Fetcher.fetchWithBase<T>(
+  /// Fetcher.fetchWithPaginate<T>(
   ///  fetcher: useCases.call(...),
   ///  state: state.<targetState>,
   ///  emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
