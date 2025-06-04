@@ -61,5 +61,11 @@ class BasePaginationState<T> {
   }
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(list), status, query, reachedMax, errorMessage);
+  int get hashCode => Object.hash(
+    Object.hashAll(list),
+    status,
+    query,
+    reachedMax,
+    errorMessage,
+  );
 }

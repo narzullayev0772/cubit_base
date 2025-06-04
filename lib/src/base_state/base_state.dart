@@ -25,17 +25,21 @@ class BaseState<T> {
 
   bool get noError => errorMessage == null;
 
-  BaseState<T> copyWith({T? data, BaseStatus? status, String? errorMessage}) => BaseState(
-    data: data ?? this.data,
-    status: status ?? this.status,
-    errorMessage: errorMessage ?? this.errorMessage,
-  );
+  BaseState<T> copyWith({T? data, BaseStatus? status, String? errorMessage}) =>
+      BaseState(
+        data: data ?? this.data,
+        status: status ?? this.status,
+        errorMessage: errorMessage ?? this.errorMessage,
+      );
 
   factory BaseState.initial() => BaseState<T>();
 
   @override
   bool operator ==(Object other) {
-    return other is BaseState && other.data == data && other.status == status && other.errorMessage == errorMessage;
+    return other is BaseState &&
+        other.data == data &&
+        other.status == status &&
+        other.errorMessage == errorMessage;
   }
 
   @override

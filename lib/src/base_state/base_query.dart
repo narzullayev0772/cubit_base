@@ -1,6 +1,6 @@
 abstract class AbstractBaseQuery {}
 
-class BaseQuery extends AbstractBaseQuery{
+class BaseQuery extends AbstractBaseQuery {
   final int page;
   final int size;
 
@@ -20,5 +20,5 @@ class BaseQuery extends AbstractBaseQuery{
   }
 
   @override
-  int get hashCode => page.hashCode ^ size.hashCode ;
+  int get hashCode => page.hashCode ^ size.hashCode;
 }

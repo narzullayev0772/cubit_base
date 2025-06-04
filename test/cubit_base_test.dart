@@ -34,8 +34,14 @@ void main() {
 
       expect(emittedStates, [
         BaseState<String>(status: BaseStatus.loading),
-        BaseState<String>(status: BaseStatus.error, errorMessage: "Something went wrong"),
-        BaseState<String>(status: BaseStatus.initial, errorMessage: "Something went wrong"),
+        BaseState<String>(
+          status: BaseStatus.error,
+          errorMessage: "Something went wrong",
+        ),
+        BaseState<String>(
+          status: BaseStatus.initial,
+          errorMessage: "Something went wrong",
+        ),
       ]);
     });
 
@@ -43,7 +49,9 @@ void main() {
       final emittedStates = <BaseState<String>>[];
 
       await Fetcher.fetchWithBase<String>(
-        fetcher: Future<DataState<String>>.error(Exception('Failed')).catchError((e) => throw e),
+        fetcher: Future<DataState<String>>.error(
+          Exception('Failed'),
+        ).catchError((e) => throw e),
         state: BaseState<String>(),
         emitter: (state) => emittedStates.add(state),
       );
@@ -60,7 +68,10 @@ void main() {
       final emittedStates = <BasePaginationState<String>>[];
       final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
 
-      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 1, size: 10));
+      var state = BasePaginationState<String>(
+        list: ["Hello"],
+        query: BaseQuery(page: 1, size: 10),
+      );
       await Fetcher.fetchWithPaginate<String>(
         fetcher: fetcher,
         state: state,
@@ -91,7 +102,11 @@ void main() {
       final emittedStates = <BasePaginationState<String>>[];
       final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
 
-      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 2, size: 10), reachedMax: true);
+      var state = BasePaginationState<String>(
+        list: ["Hello"],
+        query: BaseQuery(page: 2, size: 10),
+        reachedMax: true,
+      );
       await Fetcher.fetchWithPaginate<String>(
         fetcher: fetcher,
         state: state,
