@@ -1,3 +1,6 @@
+## [0.0.5]
+- Updated README.md with comprehensive usage instructions and examples.
+
 ## [0.0.4]
 - Updated README.md with comprehensive usage instructions and examples.
 

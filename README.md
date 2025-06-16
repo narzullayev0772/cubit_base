@@ -10,27 +10,6 @@
 - **Status Change Callbacks**: Optional callbacks to monitor state changes during fetching or pagination.
 - **Reusable and Extensible**: Integrates seamlessly with Cubit and can be used with any use case or repository pattern.
 
-## Installation
-
-Add `cubit_base` to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  cubit_base: ^[latest_version]
-```
-
-Run the following command to install the package:
-
-```bash
-flutter pub get
-```
-
-Then, import the package in your Dart code:
-
-```dart
-import 'package:cubit_base/cubit_base.dart';
-```
-
 ## Usage
 
 The `cubit_base` package provides two main methods in the `Fetcher` class:
@@ -51,122 +30,97 @@ Below is an example demonstrating how to use `cubit_base` for both single data f
 
 ### 1. Setting Up a Cubit
 
-First, define your data model and Cubit. For this example, let's assume a `UserCubit` and a `UserState`.
+First, define your data model and Cubit. For this example, let's assume a `SearchCubit` and a `SearchState`.
 
-#### `UserCubit`
+#### `SearchCubit`
 
 ```dart
-// user_cubit.dart
+// search_cubit.dart
 import 'package:bloc/bloc.dart';
 import 'package:cubit_base/cubit_base.dart';
 
-class UserCubit extends Cubit<UserState> {
-  // or you can use with usecase
-  final UserRepository repository;
+class SearchCubit extends Cubit<SearchState> {
+  final FetchSuggestionsUseCase _fetchSuggestionsUseCase;
+  final FetchComplexFilterUseCase _fetchComplexFilterUseCase;
+  final SendSuggestionViewUseCase _sendSuggestionViewUseCase;
 
-  UserCubit(this.repository) : super(UserState.initial());
+  SearchCubit(
+    this._fetchSuggestionsUseCase,
+    this._fetchComplexFilterUseCase,
+    this._sendSuggestionViewUseCase,
+  ) : super(SearchState.initial());
 
-  Future<void> fetchUser(num userId) async {
-    await Fetcher.fetchWithBase(
-      fetcher: repository.getUser(userId), // getUserUseCase.call(params:userId);
-      state: state.getUserState,
-      emitter: (newState)=> emit(state.copyWith(getUserState: newState.data)),
-      onStatusChange: (status) => print('Status: $status'),
-    );
+  void fetchSuggestions(String value) => Fetcher.fetchWithBase(
+        fetcher: _fetchSuggestionsUseCase.call(params: SuggestSearchQuery(search: value)),
+        state: state.suggestionsState,
+        emitter: (newState) => emit(state.copyWith(suggestionsState: newState)),
+      );
+
+  void fetchDefaultQuery() => Fetcher.fetchWithBase(
+        fetcher: _fetchComplexFilterUseCase.call(defaults: true),
+        state: state.filterState,
+        emitter: (newState) => emit(state.copyWith(filterState: newState)),
+      );
+
+  void fetchWithSearchQuery(String value) {
+    if (value.trim().isEmpty) {
+      fetchDefaultQuery();
+    } else {
+      Fetcher.fetchWithBase(
+        fetcher: _fetchComplexFilterUseCase.call(params: value),
+        state: state.filterState,
+        emitter: (newState) => emit(state.copyWith(filterState: newState)),
+      );
+    }
   }
 
-  Future<void> fetchUsersList() async {
-    await Fetcher.fetchWithBase(
-      fetcher: repository.getUsersList(), // getUsersListUseCase.call(params:null);
-      state: state.getUsersListState,
-      emitter: (newState)=> emit(state.copyWith(getUsersListState: newState.data)),
-      onStatusChange: (status) => print('Status: $status'),
-    );
-  }
-
-  Future<void> fetchUsersListWithPaginate() async {
-    await Fetcher.fetchWithPaginate(
-      fetcher: repository.getUsersListWithPaginate(params:state.usersListState.query), // getUsersListUseCase.call(params:null);
-      state: state.usersListState,
-      emitter: (newState)=> emit(state.copyWith(usersListState: newState.data)),
-      onStatusChange: (status) => print('Status: $status'),
-    );
-  }
+  void viewedSuggestion(num suggestionId) => Fetcher.fetchWithBase(
+        fetcher: _sendSuggestionViewUseCase.call(params: SuggestionSendBody(id: suggestionId)),
+        state: state.sendSuggestionState,
+        emitter: (newState) => emit(state.copyWith(sendSuggestionState: newState)),
+      );
 }
 ```
 
-#### `UserState`
+#### `SearchState`
 
 ```dart
-// user_state.dart
-class UserState{
-  final BaseState<UserModel> getUserState;
-  final BaseState<List<UserModel>> getUsersListState;
-  final BasePaginationState<UserModel> usersListState;
+// search_state.dart
+class SearchState {
+  final BaseState<List<AiSuggestModel>> suggestionsState;
+  final BaseState<ComplexFilterModel> filterState;
+  final BaseState sendSuggestionState;
 
-  factory UserState.initial() => UserState(getUserState: BaseState.initial(), getUsersListState: BaseState.initial(), usersListState: BasePaginationState(query: BaseQuery(page: 1, size: 10)));
+  SearchState({
+    required this.suggestionsState,
+    required this.filterState,
+    required this.sendSuggestionState,
+  });
 
-  @override
-  UserState copyWith({
-    BaseState<UserModel>? getUserState,
-    BaseState<List<UserModel>>? getUsersListState,
-    BasePaginationState<UserModel>? usersListState,
+  factory SearchState.initial() {
+    return SearchState(
+      suggestionsState: BaseState.initial(),
+      filterState: BaseState.initial(),
+      sendSuggestionState: BaseState.initial(),
+    );
+  }
+
+  SearchState copyWith({
+    BaseState<List<AiSuggestModel>>? suggestionsState,
+    BaseState<ComplexFilterModel>? filterState,
+    BaseState? sendSuggestionState,
   }) {
-    return UserState(
-      getUserState: getUserState ?? this.getUserState,
-      getUsersListState: getUsersListState ?? this.getUsersListState,
-      usersListState: usersListState ?? this.usersListState,
+    return SearchState(
+      suggestionsState: suggestionsState ?? this.suggestionsState,
+      filterState: filterState ?? this.filterState,
+      sendSuggestionState: sendSuggestionState ?? this.sendSuggestionState,
     );
   }
 }
 ```
 
 
-### 2. Using `fetchWithBase`
-
-Use `fetchWithBase` to fetch a single item, such as a user profile.
-
-```dart
-// Fetch a single user
-userCubit.fetchUser(123);
-
-// Fetch a list of users
-userCubit.fetchUsersList();
-```
-
-This will:
-- Set the state to `loading`.
-- Call the repository's `getUser` method.
-- Update the state to `success` with the fetched data or `error` with an error message.
-- Reset the state to `initial` after completion.
-- Trigger `onStatusChange` callbacks for each state change.
-
-### 3. Using `fetchWithPaginate`
-
-Use `fetchWithPaginate` to fetch paginated data, such as a list of users.
-
-```dart
-
-// Fetch a list of users with pagination
-userCubit.fetchUsersListWithPaginate();
-```
-
-This will:
-- For the first page (`page == 1`):
-    - Set the state to `loading`.
-    - Fetch the data and reset the list.
-    - Update the state to `success` with the new list or `error` with an error message.
-    - Set `reachedMax` based on the response size.
-    - Increment the page number.
-- For subsequent pages:
-    - Check if pagination is allowed (`!reachedMax` and not already `paging`).
-    - Set the state to `paging`.
-    - Append new data to the existing list.
-    - Update `reachedMax` and increment the page number.
-- Reset the state to `initial` after completion.
-- Trigger `onStatusChange` callbacks for each state change.
-
-### 4. UI Integration
+### 2. UI Integration
 
 Integrate with your UI using a `BlocBuilder` to react to state changes.
 
@@ -179,73 +133,28 @@ class UserScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => ...,
-      child: BlocBuilder<UserCubit, UserState>(
+      child: BlocBuilder<SearchCubit, SearchState>(
         builder: (context, state) {
-          if (state.status.isLoading) {
+            // when loading
+          if (state.suggestionsState.status.isLoading) {
             return Center(child: CircularProgressIndicator());
-          } else if (state.status.isSuccess) {
-            return ListView.builder(
-              itemCount: state.list.length + (state.reachedMax ? 0 : 1),
-              itemBuilder: (context, index) {
-                if (index < state.list.length) {
-                  return ListTile(title: Text(state.list[index].name));
-                } else {
-                  context.read<UserCubit>().fetchUsers();
-                  return Center(child: CircularProgressIndicator());
-                }
-              },
-            );
-          } else if (state.status.isError) {
+            // when error
+          }else if (state.status.isError) {
             return Center(child: Text('Error: ${state.errorMessage}'));
           }
-          return Container();
+            // when success and initial
+          return ListView.builder(
+              itemCount: state.suggestionsState.data.length,
+              itemBuilder: (context, index) {
+                AiSuggestModel item = state.suggestionsState.data[index];
+                return ListTile(title: Text(item.name));
+              },
+            );
         },
       ),
     );
   }
 }
-```
-
-## API Reference
-
-### `Fetcher.fetchWithBase<T>`
-
-Fetches a single item from an API and updates the state.
-
-**Parameters**:
-- `fetcher`: A `Future<DataState<T?>>` representing the API call.
-- `state`: The current `BaseState<T>` to update.
-- `emitter`: A function to emit the new state.
-- `onStatusChange`: An optional callback for status changes (`loading`, `success`, `error`, `initial`).
-
-**Example**:
-```dart
-Fetcher.fetchWithBase<T>(
-fetcher: useCases.call(...),
-state: state.<targetState>,
-emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
-onStatusChange: (status) => print(status),
-);
-```
-
-### `Fetcher.fetchWithPaginate<T>`
-
-Fetches a paginated list from an API and updates the state.
-
-**Parameters**:
-- `fetcher`: A `Future<DataState<List<T>?>>` representing the API call.
-- `state`: The current `BasePaginationState<T>` to update.
-- `emitter`: A function to emit the new state.
-- `onStatusChange`: An optional callback for status changes (`loading`, `paging`, `success`, `error`, `initial`).
-
-**Example**:
-```dart
-Fetcher.fetchWithBase<T>(
-fetcher: useCases.call(...),
-state: state.<targetState>,
-emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
-onStatusChange: (status) => print(status),
-);
 ```
 
 ## Contributing
