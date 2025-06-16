@@ -128,7 +128,7 @@ Integrate with your UI using a `BlocBuilder` to react to state changes.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UserScreen extends StatelessWidget {
+class SearchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
