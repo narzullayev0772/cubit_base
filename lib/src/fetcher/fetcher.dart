@@ -1,17 +1,16 @@
-import 'package:cubit_base/src/base_state/base_pagination_state.dart';
-import 'package:cubit_base/src/base_state/base_state.dart';
-import 'package:cubit_base/src/base_state/data_state.dart';
+
+import '../base_state/base_pagination_state.dart';
+import '../base_state/base_state.dart';
+import '../base_state/data_state.dart';
 
 class Fetcher {
-  /// [fetchWithBase] is fetching function with base state
+  /// [fetch] is fetching function with base state
   ///
   /// Params:
   /// [fetcher] function that used with useCases
   /// [state] is target state, in fact input state
   /// [emitter] is emit, that will use for set,
   /// actually output state
-  /// [onStatusChange] when status changed,
-  /// [<T>] is DataModel, it can be UserModel, NotificationModel, and etch
   ///
   /// Example:
   ///
@@ -20,103 +19,81 @@ class Fetcher {
   ///  fetcher: useCases.call(...),
   ///  state: state.<targetState>,
   ///  emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
-  ///  onStatusChange: (status) => print(status),
   ///  );
   ///  ```
   ///
   static Future<void> fetchWithBase<T>({
-    required Future<DataState<T?>> fetcher,
+    required Future<DataState<T?>> Function() fetcher,
     required BaseState<T> state,
     required void Function(BaseState<T> state) emitter,
-    void Function(BaseStatus status)? onStatusChange,
+    void Function()? onSuccess,
   }) async {
-    void onStatusChanged(BaseStatus status) {
-      if (onStatusChange != null) {
-        onStatusChange(status);
-      }
-    }
-
-    onStatusChanged(BaseStatus.loading);
     BaseState<T> newState = state.copyWith(status: BaseStatus.loading);
     try {
       emitter(newState);
 
-      final result = await fetcher;
+      final result = await fetcher();
 
       if (result is DataSuccess) {
-        onStatusChanged(BaseStatus.success);
-        newState = newState.copyWith(
-          data: result.data,
-          status: BaseStatus.success,
-        );
+        if (onSuccess != null) {
+          onSuccess();
+        }
+        newState = newState.copyWith(data: result.data, status: BaseStatus.success);
         emitter(newState);
       } else if (result is DataFailed) {
-        onStatusChanged(BaseStatus.error);
-        newState = newState.copyWith(
-          errorMessage: result.errorMessage,
-          status: BaseStatus.error,
-        );
+        newState = newState.copyWith(error: result.error, status: BaseStatus.error);
         emitter(newState);
       }
     } catch (e) {
-      onStatusChanged(BaseStatus.error);
-      newState = newState.copyWith(
-        errorMessage: e.toString(),
-        status: BaseStatus.error,
-      );
+      newState = newState.copyWith(error: e.toString(), status: BaseStatus.error);
       emitter(newState);
     } finally {
-      onStatusChanged(BaseStatus.initial);
       newState = newState.copyWith(status: BaseStatus.initial);
       emitter(newState);
     }
   }
 
-  /// [fetchWithPaginate] is fetching function with base state
+  /// fetch with pagination
+  /// [fetchWithPaging] is fetching function with base paging state
   ///
   /// Params:
-  /// [fetcher] function that used with useCases
-  /// [state] is target state, in fact input state
+  /// [isPaging] is paging status
+  /// [size] is size of data
+  /// [targetState] is target state, in fact input state
   /// [emitter] is emit, that will use for set,
   /// actually output state
-  /// [onStatusChange] when status changed,
-  /// [<T>] is List item's DataModel, it can be UserModel, NotificationModel, and etch
+  /// [fetcher] function that used with useCases
+  /// [shouldIncrement] is function that used for increment page
+  ///
   /// Example:
   ///
   /// ```dart
-  /// Fetcher.fetchWithPaginate<T>(
-  ///  fetcher: useCases.call(...),
-  ///  state: state.<targetState>,
-  ///  emitter: (newData) => emit(state.copyWith(<targetState>: newData)),
-  ///  onStatusChange: (status) => print(status),
-  ///  );
+  /// await Fetcher.fetchWithPaging(
+  /// isPaging: isPaging,
+  /// targetState: state.query,
+  /// fetcher: ()=>_getNotificationHistoryUseCase.call(params: NotificationHistoryQuery(page: state.query.page, size: 3)),
+  /// emitter: (newState) {
+  /// emit(state.copyWith(query: newState, notificationHistory: newState.query));
+  /// },
+  /// );
   ///  ```
-  ///
   static Future<void> fetchWithPaginate<T>({
-    required Future<DataState<List<T>?>> fetcher,
+    required Future<DataState<List<T>?>> Function() fetcher,
     required BasePaginationState<T> state,
     required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
+    bool? isRefresh,
   }) async {
-    if (state.query.page == 1) {
-      await _fetchFirstPage<T>(
-        fetcher: fetcher,
-        state: state,
-        emitter: emitter,
-        onStatusChange: onStatusChange,
-      );
+    if(state.status.isLoading) return;
+    if (state.query.page == 1 || isRefresh == true) {
+      await _fetchFirstPage<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
     } else {
-      await _paginate<T>(
-        fetcher: fetcher,
-        state: state,
-        emitter: emitter,
-        onStatusChange: onStatusChange,
-      );
+      await _paginate<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
     }
   }
 
   static Future<void> _fetchFirstPage<T>({
-    required Future<DataState<List<T>?>> fetcher,
+    required Future<DataState<List<T>?>> Function() fetcher,
     required BasePaginationState<T> state,
     required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
@@ -134,7 +111,7 @@ class Fetcher {
     );
     try {
       emitter(newState);
-      final result = await fetcher;
+      final result = await fetcher();
 
       if (result is DataSuccess) {
         onStatusChanged(BasePaginationStatus.success);
@@ -147,18 +124,12 @@ class Fetcher {
         emitter(newState);
       } else if (result is DataFailed) {
         onStatusChanged(BasePaginationStatus.error);
-        newState = newState.copyWith(
-          errorMessage: result.errorMessage,
-          status: BasePaginationStatus.error,
-        );
+        newState = newState.copyWith(errorMessage: result.error, status: BasePaginationStatus.error);
         emitter(newState);
       }
     } catch (e) {
       onStatusChanged(BasePaginationStatus.error);
-      newState = newState.copyWith(
-        errorMessage: e.toString(),
-        status: BasePaginationStatus.error,
-      );
+      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
       emitter(newState);
     } finally {
       onStatusChanged(BasePaginationStatus.initial);
@@ -168,7 +139,7 @@ class Fetcher {
   }
 
   static Future<void> _paginate<T>({
-    required Future<DataState<List<T>?>> fetcher,
+    required Future<DataState<List<T>?>> Function() fetcher,
     required BasePaginationState<T> state,
     required void Function(BasePaginationState<T> state) emitter,
     void Function(BasePaginationStatus status)? onStatusChange,
@@ -182,13 +153,11 @@ class Fetcher {
 
     onStatusChanged(BasePaginationStatus.paging);
 
-    BasePaginationState<T> newState = state.copyWith(
-      status: BasePaginationStatus.paging,
-    );
+    BasePaginationState<T> newState = state.copyWith(status: BasePaginationStatus.paging);
 
     try {
       emitter(newState);
-      final result = await fetcher;
+      final result = await fetcher();
 
       if (result is DataSuccess) {
         onStatusChanged(BasePaginationStatus.success);
@@ -201,18 +170,12 @@ class Fetcher {
         emitter(newState);
       } else if (result is DataFailed) {
         onStatusChanged(BasePaginationStatus.error);
-        newState = newState.copyWith(
-          errorMessage: result.errorMessage,
-          status: BasePaginationStatus.error,
-        );
+        newState = newState.copyWith(errorMessage: result.error, status: BasePaginationStatus.error);
         emitter(newState);
       }
     } catch (e) {
       onStatusChanged(BasePaginationStatus.error);
-      newState = newState.copyWith(
-        errorMessage: e.toString(),
-        status: BasePaginationStatus.error,
-      );
+      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
       emitter(newState);
     } finally {
       onStatusChanged(BasePaginationStatus.initial);

@@ -1,174 +1,99 @@
-# Cubit Base
+# cubit_base
 
-`cubit_base` is a Flutter package designed to simplify state management for applications using the Cubit architecture (part of the BLoC pattern). It provides utilities to handle API data fetching and pagination with minimal boilerplate code, making it easier to manage asynchronous operations and state updates in your Flutter apps.
+A lightweight Flutter library to simplify data fetching and pagination using Bloc/Cubit. It provides standardized states and a `Fetcher` utility to reduce boilerplate in your Clean Architecture features.
 
 ## Features
 
-- **Simplified API Fetching**: Fetch data from APIs with built-in state management for loading, success, and error states.
-- **Pagination Support**: Handle paginated data fetching with automatic page tracking and state updates.
-- **Type-Safe State Management**: Works with generic types to support various data models (e.g., `UserModel`, `NotificationModel`).
-- **Status Change Callbacks**: Optional callbacks to monitor state changes during fetching or pagination.
-- **Reusable and Extensible**: Integrates seamlessly with Cubit and can be used with any use case or repository pattern.
+- 🚀 **Standardized States**: `BaseState` and `BasePaginationState` for consistent UI handling.
+- 🔄 **Simplified Fetching**: `Fetcher.fetchWithBase` handles loading, success, and error states automatically.
+- 📑 **Built-in Pagination**: `Fetcher.fetchWithPaginate` manages page increments and "reached max" logic.
+- 🏗️ **Clean Architecture Friendly**: Designed to work seamlessly with UseCases and DataStates.
+
+## Installation
+
+Add `cubit_base` to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  cubit_base: ^0.0.5
+```
 
 ## Usage
 
-The `cubit_base` package provides two main methods in the `Fetcher` class:
+### 1. Simple Data Fetching
 
-1. **`fetchWithBase`**: For fetching single data items from an API.
-2. **`fetchWithPaginate`**: For fetching paginated lists of data with automatic page handling.
-
-### Key Components
-
-- **BaseState<T>**: A base state class for managing single data fetching with statuses (`initial`, `loading`, `success`, `error`).
-- **BasePaginationState<T>**: A state class for managing paginated data with additional pagination-specific statuses (`paging`) and properties like `reachedMax`.
-- **DataState<T>**: A sealed class representing the result of an API call (`DataSuccess` or `DataFailed`).
-- **Fetcher**: A utility class with static methods to handle fetching and pagination logic.
-
-## Example
-
-Below is an example demonstrating how to use `cubit_base` for both single data fetching and paginated data fetching.
-
-### 1. Setting Up a Cubit
-
-First, define your data model and Cubit. For this example, let's assume a `SearchCubit` and a `SearchState`.
-
-#### `SearchCubit`
+Define your state using `BaseState`:
 
 ```dart
-// search_cubit.dart
-import 'package:bloc/bloc.dart';
-import 'package:cubit_base/cubit_base.dart';
-
-class SearchCubit extends Cubit<SearchState> {
-  final FetchSuggestionsUseCase _fetchSuggestionsUseCase;
-  final FetchComplexFilterUseCase _fetchComplexFilterUseCase;
-  final SendSuggestionViewUseCase _sendSuggestionViewUseCase;
-
-  SearchCubit(
-    this._fetchSuggestionsUseCase,
-    this._fetchComplexFilterUseCase,
-    this._sendSuggestionViewUseCase,
-  ) : super(SearchState.initial());
-
-  void fetchSuggestions(String value) => Fetcher.fetchWithBase(
-        fetcher: _fetchSuggestionsUseCase.call(params: SuggestSearchQuery(search: value)),
-        state: state.suggestionsState,
-        emitter: (newState) => emit(state.copyWith(suggestionsState: newState)),
-      );
-
-  void fetchDefaultQuery() => Fetcher.fetchWithBase(
-        fetcher: _fetchComplexFilterUseCase.call(defaults: true),
-        state: state.filterState,
-        emitter: (newState) => emit(state.copyWith(filterState: newState)),
-      );
-
-  void fetchWithSearchQuery(String value) {
-    if (value.trim().isEmpty) {
-      fetchDefaultQuery();
-    } else {
-      Fetcher.fetchWithBase(
-        fetcher: _fetchComplexFilterUseCase.call(params: value),
-        state: state.filterState,
-        emitter: (newState) => emit(state.copyWith(filterState: newState)),
-      );
-    }
-  }
-
-  void viewedSuggestion(num suggestionId) => Fetcher.fetchWithBase(
-        fetcher: _sendSuggestionViewUseCase.call(params: SuggestionSendBody(id: suggestionId)),
-        state: state.sendSuggestionState,
-        emitter: (newState) => emit(state.copyWith(sendSuggestionState: newState)),
-      );
+class UserState {
+  final BaseState<User> user;
+  
+  UserState({required this.user});
+  
+  UserState copyWith({BaseState<User>? user}) => UserState(user: user ?? this.user);
 }
 ```
 
-#### `SearchState`
+Use the `Fetcher` in your Cubit:
 
 ```dart
-// search_state.dart
-class SearchState {
-  final BaseState<List<AiSuggestModel>> suggestionsState;
-  final BaseState<ComplexFilterModel> filterState;
-  final BaseState sendSuggestionState;
-
-  SearchState({
-    required this.suggestionsState,
-    required this.filterState,
-    required this.sendSuggestionState,
-  });
-
-  factory SearchState.initial() {
-    return SearchState(
-      suggestionsState: BaseState.initial(),
-      filterState: BaseState.initial(),
-      sendSuggestionState: BaseState.initial(),
-    );
-  }
-
-  SearchState copyWith({
-    BaseState<List<AiSuggestModel>>? suggestionsState,
-    BaseState<ComplexFilterModel>? filterState,
-    BaseState? sendSuggestionState,
-  }) {
-    return SearchState(
-      suggestionsState: suggestionsState ?? this.suggestionsState,
-      filterState: filterState ?? this.filterState,
-      sendSuggestionState: sendSuggestionState ?? this.sendSuggestionState,
-    );
-  }
+Future<void> getUser() async {
+  await Fetcher.fetchWithBase<User>(
+    fetcher: () => _getUserUseCase.call(),
+    state: state.user,
+    emitter: (newState) => emit(state.copyWith(user: newState)),
+  );
 }
 ```
 
+### 2. Pagination
 
-### 2. UI Integration
-
-Integrate with your UI using a `BlocBuilder` to react to state changes.
+Define your state using `BasePaginationState`:
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+class ProductState {
+  final BasePaginationState<Product> products;
 
-class SearchScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ...,
-      child: BlocBuilder<SearchCubit, SearchState>(
-        builder: (context, state) {
-            // when loading
-          if (state.suggestionsState.status.isLoading) {
-            return Center(child: CircularProgressIndicator());
-            // when error
-          }else if (state.status.isError) {
-            return Center(child: Text('Error: ${state.errorMessage}'));
-          }
-            // when success and initial
-          return ListView.builder(
-              itemCount: state.suggestionsState.data.length,
-              itemBuilder: (context, index) {
-                AiSuggestModel item = state.suggestionsState.data[index];
-                return ListTile(title: Text(item.name));
-              },
-            );
-        },
+  ProductState({required this.products});
+
+  ProductState copyWith({BasePaginationState<Product>? products}) =>
+      ProductState(products: products ?? this.products);
+}
+```
+
+Implement pagination in your Cubit:
+
+```dart
+Future<void> getProducts({bool isRefresh = false}) async {
+  await Fetcher.fetchWithPaginate<Product>(
+    fetcher: () => _getProductsUseCase.call(
+      params: ProductParams(
+        page: isRefresh ? 1 : state.products.query.page,
+        size: state.products.query.size,
       ),
-    );
-  }
+    ),
+    state: state.products,
+    isRefresh: isRefresh,
+    emitter: (newState) => emit(state.copyWith(products: newState)),
+  );
 }
 ```
 
-## Contributing
+## State Components
 
-Contributions are welcome! Please follow these steps:
+### `BaseState<T>`
+Manages a single object of type `T`.
+- `status`: `initial`, `loading`, `success`, `error`.
+- `data`: The fetched object.
+- `error`: Error message if any.
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes (`git commit -m 'Add YourFeature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Open a Pull Request.
-
-Please ensure your code follows the package's coding style and includes appropriate tests.
+### `BasePaginationState<T>`
+Manages a list of type `T`.
+- `list`: List of items.
+- `status`: `initial`, `loading`, `paging`, `success`, `error`.
+- `query`: Contains `page` and `size`.
+- `reachedMax`: Boolean indicating if all data is loaded.
 
 ## License
 
-This package is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

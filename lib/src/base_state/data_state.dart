@@ -1,14 +1,14 @@
 abstract class DataState<T> {
   final T? data;
-  final String? errorMessage;
+  final String? error;
 
-  const DataState({this.data, this.errorMessage});
+  const DataState({this.data, this.error});
 }
 
 class DataSuccess<T> extends DataState<T> {
-  const DataSuccess({required T super.data, super.errorMessage});
+  const DataSuccess({required T super.data, super.error});
 }
 
 class DataFailed<T> extends DataState<T> {
-  const DataFailed({required String super.errorMessage});
+  const DataFailed({required String super.error});
 }

@@ -13,23 +13,23 @@ extension BaseStatusService on BaseStatus {
 class BaseState<T> {
   T? data;
   BaseStatus status;
-  String? errorMessage;
+  String? error;
 
-  BaseState({this.data, this.status = BaseStatus.initial, this.errorMessage});
+  BaseState({this.data, this.status = BaseStatus.initial, this.error});
 
   bool get hasData => data != null;
 
-  bool get hasError => errorMessage != null;
+  bool get hasError => error != null;
 
   bool get noData => data == null;
 
-  bool get noError => errorMessage == null;
+  bool get noError => error == null;
 
-  BaseState<T> copyWith({T? data, BaseStatus? status, String? errorMessage}) =>
+  BaseState<T> copyWith({T? data, BaseStatus? status, String? error}) =>
       BaseState(
         data: data ?? this.data,
         status: status ?? this.status,
-        errorMessage: errorMessage ?? this.errorMessage,
+        error: error ?? this.error,
       );
 
   factory BaseState.initial() => BaseState<T>();
@@ -39,9 +39,9 @@ class BaseState<T> {
     return other is BaseState &&
         other.data == data &&
         other.status == status &&
-        other.errorMessage == errorMessage;
+        other.error == error;
   }
 
   @override
-  int get hashCode => data.hashCode ^ status.hashCode ^ errorMessage.hashCode;
+  int get hashCode => data.hashCode ^ status.hashCode ^ error.hashCode;
 }

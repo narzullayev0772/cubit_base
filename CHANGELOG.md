@@ -1,14 +1,7 @@
-## [0.0.5]
-- Updated README.md with comprehensive usage instructions and examples.
+## 0.0.5
 
-## [0.0.4]
-- Updated README.md with comprehensive usage instructions and examples.
-
-## [0.0.3]
-- Updated README.md with comprehensive usage instructions and examples.
-
-## [0.0.2]
-- Updated README.md with comprehensive usage instructions and examples.
-
-## [0.0.1]
-- init project
+- Initial public release of `cubit_base`.
+- Standardized `BaseState` and `BasePaginationState`.
+- Implemented `Fetcher` utility for streamlined Cubit operations.
+- Added support for automated pagination handling.
+- Integrated GitHub Actions for automated publishing.

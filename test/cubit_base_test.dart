@@ -11,7 +11,7 @@ void main() {
       final emittedStates = <BaseState<String>>[];
 
       await Fetcher.fetchWithBase<String>(
-        fetcher: Future.value(DataSuccess(data: "Hello world")),
+        fetcher: () => Future.value(DataSuccess(data: "Hello world")),
         state: BaseState<String>(),
         emitter: (state) => emittedStates.add(state),
       );
@@ -27,21 +27,15 @@ void main() {
       final emittedStates = <BaseState<String>>[];
 
       await Fetcher.fetchWithBase<String>(
-        fetcher: Future.value(DataFailed(errorMessage: "Something went wrong")),
+        fetcher: () => Future.value(DataFailed(error: "Something went wrong")),
         state: BaseState<String>(),
         emitter: (state) => emittedStates.add(state),
       );
 
       expect(emittedStates, [
         BaseState<String>(status: BaseStatus.loading),
-        BaseState<String>(
-          status: BaseStatus.error,
-          errorMessage: "Something went wrong",
-        ),
-        BaseState<String>(
-          status: BaseStatus.initial,
-          errorMessage: "Something went wrong",
-        ),
+        BaseState<String>(status: BaseStatus.error, error: "Something went wrong"),
+        BaseState<String>(status: BaseStatus.initial, error: "Something went wrong"),
       ]);
     });
 
@@ -49,16 +43,14 @@ void main() {
       final emittedStates = <BaseState<String>>[];
 
       await Fetcher.fetchWithBase<String>(
-        fetcher: Future<DataState<String>>.error(
-          Exception('Failed'),
-        ).catchError((e) => throw e),
+        fetcher: () => Future<DataState<String>>.error(Exception('Failed')).catchError((e) => throw e),
         state: BaseState<String>(),
         emitter: (state) => emittedStates.add(state),
       );
 
       expect(emittedStates[0].status, BaseStatus.loading);
       expect(emittedStates[1].status, BaseStatus.error);
-      expect(emittedStates[1].errorMessage, contains('Exception'));
+      expect(emittedStates[1].error, contains('Exception'));
       expect(emittedStates.last.status, BaseStatus.initial);
     });
   });
@@ -68,12 +60,9 @@ void main() {
       final emittedStates = <BasePaginationState<String>>[];
       final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
 
-      var state = BasePaginationState<String>(
-        list: ["Hello"],
-        query: BaseQuery(page: 1, size: 10),
-      );
+      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 1, size: 10));
       await Fetcher.fetchWithPaginate<String>(
-        fetcher: fetcher,
+        fetcher:() =>  fetcher,
         state: state,
         emitter: (newState) {
           state = newState;
@@ -102,13 +91,9 @@ void main() {
       final emittedStates = <BasePaginationState<String>>[];
       final fetcher = Future.value(DataSuccess(data: ["Hello", "world"]));
 
-      var state = BasePaginationState<String>(
-        list: ["Hello"],
-        query: BaseQuery(page: 2, size: 10),
-        reachedMax: true,
-      );
+      var state = BasePaginationState<String>(list: ["Hello"], query: BaseQuery(page: 2, size: 10), reachedMax: true);
       await Fetcher.fetchWithPaginate<String>(
-        fetcher: fetcher,
+        fetcher:() =>  fetcher,
         state: state,
         emitter: (newState) {
           state = newState;

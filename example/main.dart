@@ -9,5 +9,5 @@ void main() {
     print('New state: ${newState.data}');
   }
 
-  Fetcher.fetchWithBase(fetcher: fetcher, state: state, emitter: emitter);
+  Fetcher.fetchWithBase(fetcher:() =>  fetcher, state: state, emitter: emitter);
 }
