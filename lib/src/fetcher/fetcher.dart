@@ -1,4 +1,3 @@
-
 import '../base_state/base_pagination_state.dart';
 import '../base_state/base_state.dart';
 import '../base_state/data_state.dart';
@@ -38,14 +37,23 @@ class Fetcher {
         if (onSuccess != null) {
           onSuccess();
         }
-        newState = newState.copyWith(data: result.data, status: BaseStatus.success);
+        newState = newState.copyWith(
+          data: result.data,
+          status: BaseStatus.success,
+        );
         emitter(newState);
       } else if (result is DataFailed) {
-        newState = newState.copyWith(error: result.error, status: BaseStatus.error);
+        newState = newState.copyWith(
+          error: result.error,
+          status: BaseStatus.error,
+        );
         emitter(newState);
       }
     } catch (e) {
-      newState = newState.copyWith(error: e.toString(), status: BaseStatus.error);
+      newState = newState.copyWith(
+        error: e.toString(),
+        status: BaseStatus.error,
+      );
       emitter(newState);
     } finally {
       newState = newState.copyWith(status: BaseStatus.initial);
@@ -84,11 +92,21 @@ class Fetcher {
     void Function(BasePaginationStatus status)? onStatusChange,
     bool? isRefresh,
   }) async {
-    if(state.status.isLoading) return;
+    if (state.status.isLoading) return;
     if (state.query.page == 1 || isRefresh == true) {
-      await _fetchFirstPage<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+      await _fetchFirstPage<T>(
+        fetcher: fetcher,
+        state: state,
+        emitter: emitter,
+        onStatusChange: onStatusChange,
+      );
     } else {
-      await _paginate<T>(fetcher: fetcher, state: state, emitter: emitter, onStatusChange: onStatusChange);
+      await _paginate<T>(
+        fetcher: fetcher,
+        state: state,
+        emitter: emitter,
+        onStatusChange: onStatusChange,
+      );
     }
   }
 
@@ -124,12 +142,18 @@ class Fetcher {
         emitter(newState);
       } else if (result is DataFailed) {
         onStatusChanged(BasePaginationStatus.error);
-        newState = newState.copyWith(errorMessage: result.error, status: BasePaginationStatus.error);
+        newState = newState.copyWith(
+          errorMessage: result.error,
+          status: BasePaginationStatus.error,
+        );
         emitter(newState);
       }
     } catch (e) {
       onStatusChanged(BasePaginationStatus.error);
-      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
+      newState = newState.copyWith(
+        errorMessage: e.toString(),
+        status: BasePaginationStatus.error,
+      );
       emitter(newState);
     } finally {
       onStatusChanged(BasePaginationStatus.initial);
@@ -153,7 +177,9 @@ class Fetcher {
 
     onStatusChanged(BasePaginationStatus.paging);
 
-    BasePaginationState<T> newState = state.copyWith(status: BasePaginationStatus.paging);
+    BasePaginationState<T> newState = state.copyWith(
+      status: BasePaginationStatus.paging,
+    );
 
     try {
       emitter(newState);
@@ -170,12 +196,18 @@ class Fetcher {
         emitter(newState);
       } else if (result is DataFailed) {
         onStatusChanged(BasePaginationStatus.error);
-        newState = newState.copyWith(errorMessage: result.error, status: BasePaginationStatus.error);
+        newState = newState.copyWith(
+          errorMessage: result.error,
+          status: BasePaginationStatus.error,
+        );
         emitter(newState);
       }
     } catch (e) {
       onStatusChanged(BasePaginationStatus.error);
-      newState = newState.copyWith(errorMessage: e.toString(), status: BasePaginationStatus.error);
+      newState = newState.copyWith(
+        errorMessage: e.toString(),
+        status: BasePaginationStatus.error,
+      );
       emitter(newState);
     } finally {
       onStatusChanged(BasePaginationStatus.initial);
