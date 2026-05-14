@@ -1,6 +1,6 @@
 name: cubit_base
 description: A lightweight Flutter library to simplify data fetching and pagination using Bloc/Cubit. It provides standardized states and a Fetcher utility to reduce boilerplate.
-version: 0.0.6
+version: 0.0.7
 homepage: https://github.com/narzullayev0772/cubit_base
 repository: https://github.com/narzullayev0772/cubit_base
 

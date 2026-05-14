@@ -1,3 +1,7 @@
+## 0.0.7
+
+- Automatic release on push to main (2026-05-14)
+
 ## 0.0.6
 
 - Automatic release on push to main (2026-05-14)
